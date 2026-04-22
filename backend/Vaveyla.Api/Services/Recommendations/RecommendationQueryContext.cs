@@ -10,4 +10,8 @@ public sealed record RecommendationQueryContext(
     int MaxGlobalQty,
     SweetPreference Preference,
     DateTime IstanbulNow,
-    bool CustomerHasDeliveredOrders);
+    bool CustomerHasDeliveredOrders,
+    string AppliedFilter,
+    IReadOnlyList<string> ExcludedProducts,
+    string FilterReason,
+    IReadOnlyList<RecommendationFilterOptionDto> AvailableFilters);

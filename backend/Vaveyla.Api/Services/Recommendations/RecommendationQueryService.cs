@@ -43,8 +43,16 @@ public sealed class RecommendationQueryService : IRecommendationQueryService
                 0,
                 RecommendationScoringService.ParsePreference(preference),
                 GetIstanbulNow(),
-                false);
+                false,
+                "sweet/any",
+                Array.Empty<string>(),
+                "Katalog bos.",
+                DefaultFilters);
         }
+
+        var filterPreference = RecommendationScoringService.ParsePreference(preference);
+        var (filteredCatalog, excludedProducts, appliedFilter, filterReason) =
+            ApplyHardFilter(catalog, filterPreference);
 
         var menusByRestaurant = catalog
             .GroupBy(c => c.Item.RestaurantId)
@@ -65,13 +73,122 @@ public sealed class RecommendationQueryService : IRecommendationQueryService
         var maxGlobal = stats.GlobalQtyByMenuItemId.Values.DefaultIfEmpty(0).Max();
 
         return new RecommendationQueryContext(
-            catalog,
+            filteredCatalog,
             menusByRestaurant,
             stats,
             maxGlobal,
-            RecommendationScoringService.ParsePreference(preference),
+            filterPreference,
             GetIstanbulNow(),
-            stats.CustomerHasDeliveredOrders);
+            stats.CustomerHasDeliveredOrders,
+            appliedFilter,
+            excludedProducts,
+            filterReason,
+            DefaultFilters);
+    }
+
+    private static readonly IReadOnlyList<RecommendationFilterOptionDto> DefaultFilters =
+        new[]
+        {
+            new RecommendationFilterOptionDto("sweet", "Tatli", "any"),
+            new RecommendationFilterOptionDto("chocolate", "Cikolatali", "chocolate"),
+            new RecommendationFilterOptionDto("fruit", "Meyveli", "fruit"),
+            new RecommendationFilterOptionDto("bakery", "Kahvaltilik", "bakery"),
+            new RecommendationFilterOptionDto("drink", "Icecek", "drink"),
+        };
+
+    private static (IReadOnlyList<RecommendationCatalogRow> Filtered, IReadOnlyList<string> Excluded, string AppliedFilter, string Reason)
+        ApplyHardFilter(IReadOnlyList<RecommendationCatalogRow> catalog, SweetPreference preference)
+    {
+        var excluded = new List<string>();
+        var filtered = new List<RecommendationCatalogRow>();
+
+        foreach (var row in catalog)
+        {
+            if (!row.Item.IsAvailable)
+            {
+                excluded.Add(row.Item.Name);
+                continue;
+            }
+
+            var category = ResolveCategory(row.Item);
+            var tags = ResolveTags(row.Item);
+            var pass = preference switch
+            {
+                SweetPreference.Chocolate => category == ProductCategory.Sweet && tags.Contains("chocolate"),
+                SweetPreference.Fruit => category == ProductCategory.Sweet && tags.Contains("fruit"),
+                SweetPreference.Bakery => category == ProductCategory.Bakery,
+                SweetPreference.Drink => category == ProductCategory.Drink,
+                SweetPreference.Savory => category == ProductCategory.Savory,
+                _ => category == ProductCategory.Sweet,
+            };
+
+            if (pass)
+            {
+                filtered.Add(row);
+            }
+            else
+            {
+                excluded.Add(row.Item.Name);
+            }
+        }
+
+        if (filtered.Count > 0)
+        {
+            var scope = preference switch
+            {
+                SweetPreference.Bakery => "bakery",
+                SweetPreference.Drink => "drink",
+                SweetPreference.Savory => "savory",
+                _ => "sweet",
+            };
+            return (filtered, excluded, $"{scope}/{preference.ToString().ToLowerInvariant()}", "Hard filter uygulandi.");
+        }
+
+        if (preference is SweetPreference.Bakery or SweetPreference.Drink or SweetPreference.Savory)
+        {
+            var scope = preference.ToString().ToLowerInvariant();
+            return (Array.Empty<RecommendationCatalogRow>(), excluded, $"{scope}/strict", "Secili kategori icin urun bulunamadi.");
+        }
+
+        var snackFallback = catalog.Where(r => ResolveCategory(r.Item) == ProductCategory.Snack).ToList();
+        if (snackFallback.Count > 0)
+        {
+            return (snackFallback, excluded, "snack/fallback", "Sweet category bos, snack fallback uygulandi.");
+        }
+
+        return (catalog, excluded, "global/trending", "Fallback sonrasinda global trend urunler donduruldu.");
+    }
+
+    private static ProductCategory ResolveCategory(MenuItem item)
+    {
+        var value = item.CategoryName?.Trim().ToLowerInvariant() ?? string.Empty;
+        var blob = $"{item.Name} {value}".ToLowerInvariant();
+        if (blob.Contains("borek") || blob.Contains("börek") || blob.Contains("simit") || blob.Contains("sandvic") || blob.Contains("sandviç"))
+            return ProductCategory.Bakery;
+        if (blob.Contains("icecek") || blob.Contains("içecek") || blob.Contains("drink") || blob.Contains("kahve") || blob.Contains("cay") || blob.Contains("çay"))
+            return ProductCategory.Drink;
+        if (blob.Contains("tuzlu"))
+            return ProductCategory.Savory;
+        if (blob.Contains("atistirmalik") || blob.Contains("atıştırmalık") || blob.Contains("snack"))
+            return ProductCategory.Snack;
+        return ProductCategory.Sweet;
+    }
+
+    private static HashSet<string> ResolveTags(MenuItem item)
+    {
+        var blob = $"{item.Name} {item.CategoryName}".ToLowerInvariant();
+        var tags = new HashSet<string>();
+        if (blob.Contains("cikolata") || blob.Contains("çikolata") || blob.Contains("chocolate"))
+            tags.Add("chocolate");
+        if (blob.Contains("meyve") || blob.Contains("cilek") || blob.Contains("çilek") || blob.Contains("fruit"))
+            tags.Add("fruit");
+        if (blob.Contains("hafif") || blob.Contains("light") || blob.Contains("sutlu") || blob.Contains("sütlü"))
+            tags.Add("light");
+        if (blob.Contains("fit") || blob.Contains("low calorie"))
+            tags.Add("low-calorie");
+        if (blob.Contains("geleneksel"))
+            tags.Add("traditional");
+        return tags;
     }
 
     private static DateTime GetIstanbulNow()

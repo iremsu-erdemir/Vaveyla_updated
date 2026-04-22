@@ -27,12 +27,6 @@ public sealed class RecommendationScoringService : IRecommendationScoringService
         "ahududu", "elma", "armut", "kivi", "ananas", "berry", "fruit", "dondurma",
     };
 
-    private static readonly string[] LightHints =
-    {
-        "sütlaç", "sutlac", "muhallebi", "supangle", "magnolia", "krem", "panna", "sütlü",
-        "sutlu", "hafif", "yoğurt", "yogurt", "cheesecake", "puding", "panna cotta",
-    };
-
     public IReadOnlyList<(RecommendationCatalogRow Row, double Score)> ScoreAll(
         RecommendationQueryContext context)
     {
@@ -71,7 +65,9 @@ public sealed class RecommendationScoringService : IRecommendationScoringService
         {
             "chocolate" or "çikolatalı" or "cikolatali" => SweetPreference.Chocolate,
             "fruit" or "meyveli" => SweetPreference.Fruit,
-            "light" or "hafif" => SweetPreference.Light,
+            "bakery" or "kahvaltilik" or "kahvaltılık" => SweetPreference.Bakery,
+            "drink" or "icecek" or "içecek" => SweetPreference.Drink,
+            "savory" or "tuzlu" => SweetPreference.Savory,
             _ => SweetPreference.Any,
         };
     }
@@ -101,6 +97,18 @@ public sealed class RecommendationScoringService : IRecommendationScoringService
         var timeMatch = TimeMatch(item, istanbulNow, preference);
         var recency = Recency(userLastOrderedAtUtc, utcNow);
 
+        if (preference == SweetPreference.Any)
+        {
+            // "Fark etmez" modunda davranis, trend ve saat uyumunu daha belirleyici hale getir.
+            return Math.Clamp(
+                0.30 * userPreference +
+                0.35 * popularity +
+                0.25 * timeMatch +
+                0.10 * recency,
+                0d,
+                1d);
+        }
+
         return Math.Clamp(
             WeightUserPreference * userPreference +
             WeightPopularity * popularity +
@@ -120,13 +128,10 @@ public sealed class RecommendationScoringService : IRecommendationScoringService
         var blob = $"{item.Name} {item.CategoryName}".ToLowerInvariant();
         var ch = MatchesAny(blob, ChocolateHints);
         var fr = MatchesAny(blob, FruitHints);
-        var lt = MatchesAny(blob, LightHints);
-
         return pref switch
         {
-            SweetPreference.Chocolate => ch ? 1d : fr || lt ? 0.25d : 0.55d,
-            SweetPreference.Fruit => fr ? 1d : ch || lt ? 0.3d : 0.55d,
-            SweetPreference.Light => lt ? 1d : ch ? 0.35d : 0.55d,
+            SweetPreference.Chocolate => ch ? 1d : fr ? 0.25d : 0.55d,
+            SweetPreference.Fruit => fr ? 1d : ch ? 0.3d : 0.55d,
             _ => 1d,
         };
     }
@@ -138,10 +143,10 @@ public sealed class RecommendationScoringService : IRecommendationScoringService
 
         var hourFit = hour switch
         {
-            >= 6 and < 11 => MatchesLight(item) ? 1d : 0.45d,
+            >= 6 and < 11 => 0.85d,
             >= 11 and < 16 => 0.78d,
             >= 16 and < 23 => MatchesChocolate(item) ? 0.95d : 0.55d,
-            _ => MatchesLight(item) ? 0.85d : 0.5d,
+            _ => 0.5d,
         };
 
         var summer = month is 6 or 7 or 8;
@@ -160,11 +165,6 @@ public sealed class RecommendationScoringService : IRecommendationScoringService
         {
             seasonFit = 0.5 * seasonFit + 0.5 * (MatchesFruit(item) ? 1d : 0.35d);
         }
-        else if (pref == SweetPreference.Light)
-        {
-            hourFit = 0.65 * hourFit + 0.35 * (MatchesLight(item) ? 1d : 0.35d);
-        }
-
         return Math.Clamp(0.65 * hourFit + 0.35 * seasonFit, 0d, 1d);
     }
 
@@ -184,9 +184,6 @@ public sealed class RecommendationScoringService : IRecommendationScoringService
 
     private static bool MatchesFruit(MenuItem item) =>
         MatchesAny($"{item.Name} {item.CategoryName}", FruitHints);
-
-    private static bool MatchesLight(MenuItem item) =>
-        MatchesAny($"{item.Name} {item.CategoryName}", LightHints);
 
     private static bool MatchesAny(string text, IEnumerable<string> hints) =>
         hints.Any(h => text.Contains(h, StringComparison.OrdinalIgnoreCase));

@@ -5,5 +5,7 @@ public enum SweetPreference
     Any,
     Chocolate,
     Fruit,
-    Light,
+    Bakery,
+    Drink,
+    Savory,
 }
