@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Vaveyla.Api.Data;
 using Vaveyla.Api.DTOs;
 using Vaveyla.Api.Models;
+using Vaveyla.Api.Services;
 
 namespace Vaveyla.Api.Controllers;
 
@@ -12,13 +13,16 @@ public sealed class UsersController : ControllerBase
 {
     private readonly IUserRepository _users;
     private readonly IWebHostEnvironment _environment;
+    private readonly IImageModerationService _imageModerationService;
 
     public UsersController(
         IUserRepository users,
-        IWebHostEnvironment environment)
+        IWebHostEnvironment environment,
+        IImageModerationService imageModerationService)
     {
         _users = users;
         _environment = environment;
+        _imageModerationService = imageModerationService;
     }
 
     [HttpGet("{userId:guid}/profile")]
@@ -54,6 +58,21 @@ public sealed class UsersController : ControllerBase
         if (file.Length == 0)
         {
             return BadRequest(new { message = "File is required." });
+        }
+
+        await using (var stream = file.OpenReadStream())
+        {
+            var moderationResult = await _imageModerationService.CheckAsync(
+                stream,
+                file.ContentType,
+                cancellationToken);
+            if (!moderationResult.Allowed)
+            {
+                return BadRequest(new
+                {
+                    message = "Uygunsuz içerik tespit edildi. Lütfen farklı bir fotoğraf seçin."
+                });
+            }
         }
 
         var user = await _users.GetByIdAsync(userId, cancellationToken);

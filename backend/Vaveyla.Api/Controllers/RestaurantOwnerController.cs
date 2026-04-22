@@ -18,6 +18,7 @@ public sealed class RestaurantOwnerController : ControllerBase
     private readonly INotificationService _notificationService;
     private readonly IUserRepository _usersRepository;
     private readonly IUserSuspensionService _suspension;
+    private readonly IImageModerationService _imageModerationService;
 
     public RestaurantOwnerController(
         IRestaurantOwnerRepository repository,
@@ -26,7 +27,8 @@ public sealed class RestaurantOwnerController : ControllerBase
         VaveylaDbContext dbContext,
         INotificationService notificationService,
         IUserRepository usersRepository,
-        IUserSuspensionService suspension)
+        IUserSuspensionService suspension,
+        IImageModerationService imageModerationService)
     {
         _repository = repository;
         _customerOrdersRepository = customerOrdersRepository;
@@ -35,6 +37,7 @@ public sealed class RestaurantOwnerController : ControllerBase
         _notificationService = notificationService;
         _usersRepository = usersRepository;
         _suspension = suspension;
+        _imageModerationService = imageModerationService;
     }
 
     [HttpPost("uploads/menu")]
@@ -77,6 +80,21 @@ public sealed class RestaurantOwnerController : ControllerBase
         if (file.Length == 0)
         {
             return BadRequest(new { message = "File is required." });
+        }
+
+        await using (var stream = file.OpenReadStream())
+        {
+            var moderationResult = await _imageModerationService.CheckAsync(
+                stream,
+                file.ContentType,
+                cancellationToken);
+            if (!moderationResult.Allowed)
+            {
+                return BadRequest(new
+                {
+                    message = "Uygunsuz içerik tespit edildi. Lütfen farklı bir fotoğraf seçin."
+                });
+            }
         }
 
         var relativePath = await SaveUploadAsync(ownerUserId, "restaurant", file, cancellationToken);

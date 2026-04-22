@@ -144,7 +144,9 @@ class _ProfileTabState extends State<ProfileTab> {
         return;
       }
       context.showErrorMessage(
-        e is AuthException ? e.message : context.tr('profile_info_fetch_failed'),
+        e is AuthException
+            ? e.message
+            : context.tr('profile_info_fetch_failed'),
       );
     }
   }
@@ -295,6 +297,10 @@ class _ProfileTabState extends State<ProfileTab> {
       }
       context.showSuccessMessage(context.tr('profile_photo_updated'));
     } catch (error) {
+      if (mounted && error is AuthException) {
+        context.showErrorMessage(error.message);
+        return;
+      }
       // Some clients can fail on immediate upload parsing even when backend save succeeds.
       // We re-fetch profile once before showing an error.
       final refreshed = await _refreshProfileAfterUpload();
@@ -370,12 +376,10 @@ class _ProfileTabState extends State<ProfileTab> {
             ),
             FilledButton(
               onPressed: () {
-                Navigator.of(dialogContext).pop(
-                  (
-                    nameController.text.trim(),
-                    emailController.text.trim(),
-                  ),
-                );
+                Navigator.of(dialogContext).pop((
+                  nameController.text.trim(),
+                  emailController.text.trim(),
+                ));
               },
               child: const Text('Kaydet'),
             ),

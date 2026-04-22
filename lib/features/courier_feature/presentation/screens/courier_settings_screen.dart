@@ -119,7 +119,8 @@ class _CourierSettingsScreenState extends State<CourierSettingsScreen> {
     try {
       if (value) {
         await NotificationService.instance.initialize();
-        final granted = await NotificationService.instance.requestOsPermission();
+        final granted =
+            await NotificationService.instance.requestOsPermission();
         if (!granted) {
           try {
             await _profileService.patchUserSettings(
@@ -178,9 +179,7 @@ class _CourierSettingsScreenState extends State<CourierSettingsScreen> {
       if (!mounted) {
         return;
       }
-      _showError(
-        e is AuthException ? e.message : 'Ayar güncellenemedi.',
-      );
+      _showError(e is AuthException ? e.message : 'Ayar güncellenemedi.');
     }
   }
 
@@ -188,23 +187,24 @@ class _CourierSettingsScreenState extends State<CourierSettingsScreen> {
     if (_isUploadingPhoto || AppSession.userId.isEmpty) return;
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Galeriden seç'),
-              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+      builder:
+          (ctx) => SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.photo_library_outlined),
+                  title: const Text('Galeriden seç'),
+                  onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.camera_alt_outlined),
+                  title: const Text('Kamera ile çek'),
+                  onTap: () => Navigator.pop(ctx, ImageSource.camera),
+                ),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt_outlined),
-              title: const Text('Kamera ile çek'),
-              onTap: () => Navigator.pop(ctx, ImageSource.camera),
-            ),
-          ],
-        ),
-      ),
+          ),
     );
     if (source == null) return;
     final picked = await pickAndSaveImage(source);
@@ -226,7 +226,9 @@ class _CourierSettingsScreenState extends State<CourierSettingsScreen> {
       _showSuccess('Profil fotoğrafı güncellendi');
     } catch (e) {
       if (mounted) {
-        _showSuccess('Fotoğraf yüklenemedi: $e');
+        final message =
+            e is AuthException ? e.message : 'Fotoğraf yüklenemedi: $e';
+        _showError(message);
       }
     } finally {
       if (mounted) setState(() => _isUploadingPhoto = false);
@@ -245,63 +247,61 @@ class _CourierSettingsScreenState extends State<CourierSettingsScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(Dimens.extraLargePadding),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                title,
-                style: context.theme.appTypography.titleLarge,
-              ),
-              const SizedBox(height: Dimens.largePadding),
-              TextField(
-                controller: controller,
-                autofocus: true,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(Dimens.corners),
+      builder:
+          (ctx) => Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(Dimens.extraLargePadding),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(title, style: context.theme.appTypography.titleLarge),
+                  const SizedBox(height: Dimens.largePadding),
+                  TextField(
+                    controller: controller,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(Dimens.corners),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: Dimens.largePadding),
+                  AppButton(
+                    title: 'Kaydet',
+                    onPressed: () async {
+                      final value = controller.text.trim();
+                      if (value.isEmpty) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          SnackBar(
+                            content: Text('$title boş olamaz'),
+                            backgroundColor: context.theme.appColors.error,
+                          ),
+                        );
+                        return;
+                      }
+                      try {
+                        await onSave(value);
+                        if (!ctx.mounted) return;
+                        Navigator.pop(ctx);
+                      } catch (e) {
+                        if (!ctx.mounted) return;
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          SnackBar(
+                            content: Text(e.toString()),
+                            backgroundColor: ctx.theme.appColors.error,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ],
               ),
-              const SizedBox(height: Dimens.largePadding),
-              AppButton(
-                title: 'Kaydet',
-                onPressed: () async {
-                  final value = controller.text.trim();
-                  if (value.isEmpty) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                      SnackBar(
-                        content: Text('$title boş olamaz'),
-                        backgroundColor: context.theme.appColors.error,
-                      ),
-                    );
-                    return;
-                  }
-                  try {
-                    await onSave(value);
-                    if (!ctx.mounted) return;
-                    Navigator.pop(ctx);
-                  } catch (e) {
-                    if (!ctx.mounted) return;
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                      SnackBar(
-                        content: Text(e.toString()),
-                        backgroundColor: ctx.theme.appColors.error,
-                      ),
-                    );
-                  }
-                },
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 
@@ -362,7 +362,8 @@ class _CourierSettingsScreenState extends State<CourierSettingsScreen> {
                         AppButton(
                           title: 'Kaydet',
                           onPressed: () async {
-                            final localDigits = localDigitsController.text.trim();
+                            final localDigits =
+                                localDigitsController.text.trim();
                             if (localDigits.isEmpty) {
                               setModalState(
                                 () =>
@@ -456,9 +457,7 @@ class _CourierSettingsScreenState extends State<CourierSettingsScreen> {
             ? _profile!.fullName
             : (AppSession.fullName.isNotEmpty ? AppSession.fullName : 'Kurye');
     final currentEmail =
-        _profile?.email.trim().isNotEmpty == true
-            ? _profile!.email
-            : '';
+        _profile?.email.trim().isNotEmpty == true ? _profile!.email : '';
     if (currentEmail.trim().isEmpty) {
       throw Exception('E-posta bilgisi bulunamadı.');
     }
@@ -499,18 +498,17 @@ class _CourierSettingsScreenState extends State<CourierSettingsScreen> {
   Widget build(BuildContext context) {
     final colors = context.theme.appColors;
     final typography = context.theme.appTypography;
-    final displayName = _profile?.fullName.trim().isNotEmpty == true
-        ? _profile!.fullName
-        : (AppSession.fullName.isNotEmpty ? AppSession.fullName : 'Kurye');
-    final displayEmail = _profile?.email.trim().isNotEmpty == true
-        ? _profile!.email
-        : 'E-posta yükleniyor...';
+    final displayName =
+        _profile?.fullName.trim().isNotEmpty == true
+            ? _profile!.fullName
+            : (AppSession.fullName.isNotEmpty ? AppSession.fullName : 'Kurye');
+    final displayEmail =
+        _profile?.email.trim().isNotEmpty == true
+            ? _profile!.email
+            : 'E-posta yükleniyor...';
 
     return AppScaffold(
-      appBar: GeneralAppBar(
-        title: 'Kurye Ayarları',
-        showBackIcon: false,
-      ),
+      appBar: GeneralAppBar(title: 'Kurye Ayarları', showBackIcon: false),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(Dimens.largePadding),
         child: Column(
@@ -583,7 +581,9 @@ class _CourierSettingsScreenState extends State<CourierSettingsScreen> {
                           GestureDetector(
                             onTap: _pickAndUploadProfilePhoto,
                             child: Padding(
-                              padding: const EdgeInsets.only(top: Dimens.padding),
+                              padding: const EdgeInsets.only(
+                                top: Dimens.padding,
+                              ),
                               child: Row(
                                 children: [
                                   AppSvgViewer(
@@ -611,9 +611,7 @@ class _CourierSettingsScreenState extends State<CourierSettingsScreen> {
             ),
             if (_profile?.totalPenaltyPoints != null) ...[
               const SizedBox(height: Dimens.largePadding),
-              PenaltyPointsSummaryCard(
-                points: _profile!.totalPenaltyPoints!,
-              ),
+              PenaltyPointsSummaryCard(points: _profile!.totalPenaltyPoints!),
             ],
             const SizedBox(height: Dimens.extraLargePadding),
             _SectionHeader(
@@ -628,14 +626,13 @@ class _CourierSettingsScreenState extends State<CourierSettingsScreen> {
                     title: 'Ad Soyad',
                     value: displayName,
                     iconPath: Assets.icons.user,
-                    onTap: () => _showEditFieldSheet(
-                      'Ad Soyad',
-                      displayName,
-                      (v) async {
-                        await _saveProfileChanges(fullName: v);
-                        _showSuccess('Ad soyad güncellendi');
-                      },
-                    ),
+                    onTap:
+                        () => _showEditFieldSheet('Ad Soyad', displayName, (
+                          v,
+                        ) async {
+                          await _saveProfileChanges(fullName: v);
+                          _showSuccess('Ad soyad güncellendi');
+                        }),
                   ),
                   _SettingsListTile(
                     title: 'Telefon',
@@ -663,9 +660,10 @@ class _CourierSettingsScreenState extends State<CourierSettingsScreen> {
               child: Column(
                 children: [
                   AppListTile(
-                    onTap: () => _onOrderNotificationsChanged(
-                      !_orderNotificationsFromServer,
-                    ),
+                    onTap:
+                        () => _onOrderNotificationsChanged(
+                          !_orderNotificationsFromServer,
+                        ),
                     title: 'Sipariş bildirimleri',
                     leadingIconPath: Assets.icons.notification,
                     trailing: Transform.scale(
@@ -699,8 +697,8 @@ class _CourierSettingsScreenState extends State<CourierSettingsScreen> {
                       scale: 0.7,
                       child: CupertinoSwitch(
                         value: checkDarkMode(context),
-                        onChanged: (_) =>
-                            context.read<ThemeCubit>().toggleTheme(),
+                        onChanged:
+                            (_) => context.read<ThemeCubit>().toggleTheme(),
                         activeTrackColor: colors.primary,
                       ),
                     ),

@@ -17,6 +17,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection(JwtSettings.SectionName));
+builder.Services.Configure<ImageModerationOptions>(
+    builder.Configuration.GetSection(ImageModerationOptions.SectionName));
 builder.Services.AddScoped<IJwtService, JwtService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "Vaveyla-DefaultKey-Min32CharactersRequired!!";
@@ -79,6 +81,8 @@ builder.Services.AddScoped<IRecommendationQueryService, RecommendationQueryServi
 builder.Services.AddSingleton<IRecommendationScoringService, RecommendationScoringService>();
 builder.Services.AddScoped<IRecommendationComposer, RecommendationComposer>();
 builder.Services.AddScoped<IRecommendationService, RecommendationService>();
+builder.Services.AddHttpClient(nameof(GoogleVisionImageModerationService));
+builder.Services.AddScoped<IImageModerationService, GoogleVisionImageModerationService>();
 builder.Services.AddSignalR();
 builder.Services.AddCors(options =>
 {

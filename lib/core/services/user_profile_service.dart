@@ -7,12 +7,17 @@ import 'package:image_picker/image_picker.dart';
 import '../models/user_profile.dart';
 import 'app_session.dart';
 import 'auth_service.dart';
+import 'image_moderation_service.dart';
 
 class UserProfileService {
   UserProfileService({AuthService? authService})
-    : _authService = authService ?? AuthService();
+    : _authService = authService ?? AuthService(),
+      _imageModerationService = ImageModerationService(
+        authService: authService ?? AuthService(),
+      );
 
   final AuthService _authService;
+  final ImageModerationService _imageModerationService;
 
   Map<String, String> _authHeaders({bool jsonBody = false}) {
     final token = AppSession.token.trim();
@@ -37,6 +42,11 @@ class UserProfileService {
     Uint8List? fileBytes,
     String? fileName,
   }) async {
+    await _imageModerationService.ensureImageIsAllowed(
+      filePath: filePath,
+      fileBytes: fileBytes,
+      fileName: fileName,
+    );
     final response = await _multipartWithFallback(
       path: '/api/users/$userId/profile-photo',
       filePath: filePath,
@@ -80,10 +90,7 @@ class UserProfileService {
     for (final baseUrl in _authService.baseUrls) {
       try {
         return await http
-            .get(
-              Uri.parse('$baseUrl$path'),
-              headers: _authHeaders(),
-            )
+            .get(Uri.parse('$baseUrl$path'), headers: _authHeaders())
             .timeout(const Duration(seconds: 8));
       } on Exception catch (error) {
         if (kDebugMode) {

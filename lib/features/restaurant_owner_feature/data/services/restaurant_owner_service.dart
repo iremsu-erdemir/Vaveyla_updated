@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_sweet_shop_app_ui/core/services/auth_service.dart';
+import 'package:flutter_sweet_shop_app_ui/core/services/image_moderation_service.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:flutter_sweet_shop_app_ui/features/restaurant_owner_feature/data/models/courier_account_model.dart';
@@ -24,6 +25,8 @@ class RestaurantOwnerService {
 
   final AuthService authService;
   final List<String> _baseUrls;
+  late final ImageModerationService _imageModerationService =
+      ImageModerationService(authService: AuthService(baseUrls: _baseUrls));
 
   Future<List<MenuItemModel>> getMenu({required String ownerUserId}) async {
     final response = await _getWithFallback(
@@ -124,9 +127,10 @@ class RestaurantOwnerService {
     required String restaurantId,
     String? period,
   }) async {
-    final query = (period == null || period.trim().isEmpty || period == 'all')
-        ? ''
-        : '?period=${Uri.encodeQueryComponent(period.trim())}';
+    final query =
+        (period == null || period.trim().isEmpty || period == 'all')
+            ? ''
+            : '?period=${Uri.encodeQueryComponent(period.trim())}';
 
     final response = await _getWithFallback(
       path: '/api/restaurant/$restaurantId/top-products$query',
@@ -171,9 +175,8 @@ class RestaurantOwnerService {
       return data
           .whereType<Map>()
           .map(
-            (item) => CourierAccountModel.fromJson(
-              item.cast<String, dynamic>(),
-            ),
+            (item) =>
+                CourierAccountModel.fromJson(item.cast<String, dynamic>()),
           )
           .toList();
     }
@@ -270,18 +273,24 @@ class RestaurantOwnerService {
       'restaurantDiscountPercent': restaurantDiscountPercent,
     };
     if (kDebugMode) {
-      debugPrint('[API DEBUG] updateDiscountPercent: ownerUserId=$ownerUserId percent=$restaurantDiscountPercent body=$body');
+      debugPrint(
+        '[API DEBUG] updateDiscountPercent: ownerUserId=$ownerUserId percent=$restaurantDiscountPercent body=$body',
+      );
     }
     final response = await _putWithFallback(
       path: '/api/owner/settings/discount?ownerUserId=$ownerUserId',
       body: body,
     );
     if (kDebugMode) {
-      debugPrint('[API DEBUG] updateDiscountPercent response: ${response.statusCode} body=${response.body}');
+      debugPrint(
+        '[API DEBUG] updateDiscountPercent response: ${response.statusCode} body=${response.body}',
+      );
     }
     final data = _decodeJson(response) as Map<String, dynamic>;
     if (kDebugMode) {
-      debugPrint('[API DEBUG] updateDiscountPercent parsed: restaurantDiscountPercent=${data['restaurantDiscountPercent']} restaurantDiscountApproved=${data['restaurantDiscountApproved']}');
+      debugPrint(
+        '[API DEBUG] updateDiscountPercent parsed: restaurantDiscountPercent=${data['restaurantDiscountPercent']} restaurantDiscountApproved=${data['restaurantDiscountApproved']}',
+      );
     }
     return RestaurantSettingsState.fromJson(data);
   }
@@ -406,6 +415,11 @@ class RestaurantOwnerService {
     Uint8List? fileBytes,
     String? fileName,
   }) async {
+    await _imageModerationService.ensureImageIsAllowed(
+      filePath: filePath,
+      fileBytes: fileBytes,
+      fileName: fileName,
+    );
     final response = await _multipartWithFallback(
       path: '/api/owner/uploads/restaurant-photo?ownerUserId=$ownerUserId',
       filePath: filePath,
@@ -472,7 +486,8 @@ class RestaurantOwnerService {
               body: jsonEncode(body),
             )
             .timeout(const Duration(seconds: 8));
-        if (kDebugMode) debugPrint('[API DEBUG] Owner PUT OK: ${res.statusCode}');
+        if (kDebugMode)
+          debugPrint('[API DEBUG] Owner PUT OK: ${res.statusCode}');
         return res;
       } on Exception catch (error, stack) {
         if (kDebugMode) {

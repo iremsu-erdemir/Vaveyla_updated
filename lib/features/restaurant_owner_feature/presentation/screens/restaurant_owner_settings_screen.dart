@@ -98,10 +98,7 @@ class _RestaurantOwnerSettingsScreenState
     return BlocBuilder<RestaurantSettingsCubit, RestaurantSettingsState>(
       builder: (context, settings) {
         return AppScaffold(
-          appBar: GeneralAppBar(
-            title: 'Pastane Ayarları',
-            showBackIcon: false,
-          ),
+          appBar: GeneralAppBar(title: 'Pastane Ayarları', showBackIcon: false),
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(Dimens.largePadding),
             child: Column(
@@ -368,50 +365,67 @@ class _RestaurantOwnerSettingsScreenState
                         onTap: () => _showDiscountDialog(context, settings),
                         title: 'Kampanya / İndirim',
                         leadingIconPath: Assets.icons.percentageSquare,
-                        trailing: (settings.activeCampaignDisplayText != null && settings.activeCampaignDisplayText!.isNotEmpty) ||
-                                settings.restaurantDiscountPercent != null
-                            ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    settings.activeCampaignDisplayText ?? '%${settings.restaurantDiscountPercent!.toInt()} (${settings.restaurantDiscountApproved ? (settings.restaurantDiscountIsActive ? 'Aktif' : 'Pasif') : 'Onay bekliyor'})',
-                                    style: typography.bodySmall.copyWith(
-                                      color: colors.gray4,
-                                    ),
-                                  ),
-                                  if (settings.restaurantDiscountApproved) ...[
-                                    const SizedBox(width: 8),
-                                    Transform.scale(
-                                      scale: 0.8,
-                                      child: CupertinoSwitch(
-                                        value: settings.restaurantDiscountIsActive,
-                                        onChanged: (v) async {
-                                          try {
-                                            await context.read<RestaurantSettingsCubit>().toggleDiscountActive(v);
-                                            if (context.mounted) {
-                                              _showSuccess(
-                                                context,
-                                                v ? 'İndirim aktifleştirildi.' : 'İndirim pasifleştirildi.',
-                                              );
-                                            }
-                                          } catch (e) {
-                                            if (context.mounted) {
-                                              _showError(context, e.toString());
-                                            }
-                                          }
-                                        },
-                                        activeTrackColor: colors.primary,
+                        trailing:
+                            (settings.activeCampaignDisplayText != null &&
+                                        settings
+                                            .activeCampaignDisplayText!
+                                            .isNotEmpty) ||
+                                    settings.restaurantDiscountPercent != null
+                                ? Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      settings.activeCampaignDisplayText ??
+                                          '%${settings.restaurantDiscountPercent!.toInt()} (${settings.restaurantDiscountApproved ? (settings.restaurantDiscountIsActive ? 'Aktif' : 'Pasif') : 'Onay bekliyor'})',
+                                      style: typography.bodySmall.copyWith(
+                                        color: colors.gray4,
                                       ),
                                     ),
+                                    if (settings
+                                        .restaurantDiscountApproved) ...[
+                                      const SizedBox(width: 8),
+                                      Transform.scale(
+                                        scale: 0.8,
+                                        child: CupertinoSwitch(
+                                          value:
+                                              settings
+                                                  .restaurantDiscountIsActive,
+                                          onChanged: (v) async {
+                                            try {
+                                              await context
+                                                  .read<
+                                                    RestaurantSettingsCubit
+                                                  >()
+                                                  .toggleDiscountActive(v);
+                                              if (context.mounted) {
+                                                _showSuccess(
+                                                  context,
+                                                  v
+                                                      ? 'İndirim aktifleştirildi.'
+                                                      : 'İndirim pasifleştirildi.',
+                                                );
+                                              }
+                                            } catch (e) {
+                                              if (context.mounted) {
+                                                _showError(
+                                                  context,
+                                                  e.toString(),
+                                                );
+                                              }
+                                            }
+                                          },
+                                          activeTrackColor: colors.primary,
+                                        ),
+                                      ),
+                                    ],
                                   ],
-                                ],
-                              )
-                            : Text(
-                                'Yok',
-                                style: typography.bodySmall.copyWith(
-                                  color: colors.gray4,
+                                )
+                                : Text(
+                                  'Yok',
+                                  style: typography.bodySmall.copyWith(
+                                    color: colors.gray4,
+                                  ),
                                 ),
-                              ),
                         padding: EdgeInsets.zero,
                       ),
                       const SizedBox(height: Dimens.smallPadding),
@@ -536,11 +550,14 @@ class _RestaurantOwnerSettingsScreenState
     } else if (result >= 0 && result <= 100) {
       value = result.toDouble();
     } else {
-      if (context.mounted) _showError(context, 'Geçerli bir oran girin (0-100).');
+      if (context.mounted)
+        _showError(context, 'Geçerli bir oran girin (0-100).');
       return;
     }
     try {
-      await context.read<RestaurantSettingsCubit>().setRestaurantDiscountPercent(value);
+      await context
+          .read<RestaurantSettingsCubit>()
+          .setRestaurantDiscountPercent(value);
       if (context.mounted) {
         _showSuccess(
           context,
@@ -935,9 +952,11 @@ class _RestaurantPhotoPickerState extends State<_RestaurantPhotoPicker> {
       }
     } catch (e) {
       if (mounted) {
+        final message =
+            e is AuthException ? e.message : 'Fotoğraf yüklenemedi: $e';
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Fotoğraf yüklenemedi: $e')));
+        ).showSnackBar(SnackBar(content: Text(message)));
       }
     }
   }
