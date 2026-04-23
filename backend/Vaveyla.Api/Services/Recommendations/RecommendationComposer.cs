@@ -117,7 +117,17 @@ public sealed class RecommendationComposer : IRecommendationComposer
     {
         var value = item.CategoryName?.Trim().ToLowerInvariant() ?? string.Empty;
         var blob = $"{item.Name} {value}".ToLowerInvariant();
-        if (blob.Contains("borek") || blob.Contains("börek") || blob.Contains("simit") || blob.Contains("sandvic") || blob.Contains("sandviç"))
+        if (blob.Contains("borek")
+            || blob.Contains("börek")
+            || blob.Contains("kut boregi")
+            || blob.Contains("küt böreği")
+            || blob.Contains("kruvasan")
+            || blob.Contains("croissant")
+            || blob.Contains("pogaca")
+            || blob.Contains("poğaça")
+            || blob.Contains("simit")
+            || blob.Contains("sandvic")
+            || blob.Contains("sandviç"))
             return ProductCategory.Bakery;
         if (blob.Contains("icecek") || blob.Contains("içecek") || blob.Contains("drink") || blob.Contains("kahve") || blob.Contains("cay") || blob.Contains("çay"))
             return ProductCategory.Drink;

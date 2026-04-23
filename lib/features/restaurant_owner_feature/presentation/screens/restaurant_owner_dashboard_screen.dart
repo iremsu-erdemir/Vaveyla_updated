@@ -56,8 +56,9 @@ class RestaurantOwnerDashboardScreen extends StatelessWidget {
                     ..loadSettings(),
         ),
         BlocProvider(
-          create: (_) =>
-              RestaurantTopProductsCubit(ownerService, ownerUserId)..load(),
+          create:
+              (_) =>
+                  RestaurantTopProductsCubit(ownerService, ownerUserId)..load(),
         ),
       ],
       child: const _RestaurantOwnerDashboardScreen(),
@@ -293,10 +294,11 @@ class _DashboardTab extends StatelessWidget {
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => BlocProvider.value(
-                            value: context.read<RestaurantSettingsCubit>(),
-                            child: const RestaurantCampaignsScreen(),
-                          ),
+                          builder:
+                              (_) => BlocProvider.value(
+                                value: context.read<RestaurantSettingsCubit>(),
+                                child: const RestaurantCampaignsScreen(),
+                              ),
                         ),
                       );
                     },
@@ -753,7 +755,8 @@ class _TopProductsSection extends StatelessWidget {
         }
 
         if (state.stats == null ||
-            (state.stats!.bestSeller == null && state.stats!.topProducts.isEmpty)) {
+            (state.stats!.bestSeller == null &&
+                state.stats!.topProducts.isEmpty)) {
           return _EmptyStateCard(message: 'Henüz satış istatistiği yok.');
         }
 
@@ -803,21 +806,24 @@ class _TopProductsSection extends StatelessWidget {
                     ],
                     onPressed: (index) {
                       if (index == 0) {
-                        context
-                            .read<RestaurantTopProductsCubit>()
-                            .setPeriod(TopProductsPeriod.all);
+                        context.read<RestaurantTopProductsCubit>().setPeriod(
+                          TopProductsPeriod.all,
+                        );
                       } else if (index == 1) {
-                        context
-                            .read<RestaurantTopProductsCubit>()
-                            .setPeriod(TopProductsPeriod.weekly);
+                        context.read<RestaurantTopProductsCubit>().setPeriod(
+                          TopProductsPeriod.weekly,
+                        );
                       } else {
-                        context
-                            .read<RestaurantTopProductsCubit>()
-                            .setPeriod(TopProductsPeriod.monthly);
+                        context.read<RestaurantTopProductsCubit>().setPeriod(
+                          TopProductsPeriod.monthly,
+                        );
                       }
                     },
                     borderRadius: const BorderRadius.all(Radius.circular(14)),
-                    constraints: const BoxConstraints(minWidth: 56, minHeight: 32),
+                    constraints: const BoxConstraints(
+                      minWidth: 56,
+                      minHeight: 32,
+                    ),
                     color: colors.gray4,
                     selectedColor: colors.white,
                     fillColor: colors.primary.withValues(alpha: 0.85),
@@ -839,9 +845,7 @@ class _TopProductsSection extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: Dimens.largePadding),
-              _BestSellerCard(
-                bestSeller: bestSeller,
-              ),
+              _BestSellerCard(bestSeller: bestSeller),
               const SizedBox(height: Dimens.largePadding),
               Text(
                 'Top Ürünler',
@@ -960,9 +964,7 @@ class _TopProductsList extends StatelessWidget {
       children: List.generate(items.length, (index) {
         final item = items[index];
         return Padding(
-          padding: EdgeInsets.only(
-            top: index == 0 ? 0 : Dimens.smallPadding,
-          ),
+          padding: EdgeInsets.only(top: index == 0 ? 0 : Dimens.smallPadding),
           child: Row(
             children: [
               Container(
@@ -972,7 +974,9 @@ class _TopProductsList extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: colors.primary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: colors.primary.withValues(alpha: 0.22)),
+                  border: Border.all(
+                    color: colors.primary.withValues(alpha: 0.22),
+                  ),
                 ),
                 child: Text(
                   '${index + 1}',
